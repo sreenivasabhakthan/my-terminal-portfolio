@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Terminal Portfolio</title>
+    <!-- Google Font for a modern Linux terminal style: Inconsolata -->
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Basic reset and body styling */
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a1a1a; /* Dark background */
+            font-family: 'Inconsolata', monospace; /* Changed to Inconsolata for Linux terminal font */
+            color: #00ff00; /* Classic green text */
+            overflow: hidden; /* Hide scrollbars on body */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Terminal container styling */
+        #terminal {
+            background-color: rgba(0, 0, 0, 0.9); /* Semi-transparent black */
+            border: 1px solid #00ff00; /* Green border */
+            border-radius: 8px; /* Slightly rounded corners */
+            padding: 20px;
+            width: 90%; /* Responsive width */
+            max-width: 900px; /* Max width for desktop */
+            height: 70vh; /* Viewport height */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Hide scrollbar on terminal container, output handles it */
+            position: relative;
+        }
+
+        /* Output area styling */
+        #output {
+            flex-grow: 1; /* Allows it to take available space */
+            overflow-y: auto; /* Enable vertical scrolling */
+            white-space: pre-wrap; /* Preserves whitespace and wraps text */
+            padding-right: 10px; /* Space for scrollbar */
+            line-height: 1.5; /* Good line spacing for readability */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #00ff00 #333; /* Firefox */
+        }
+
+        /* Webkit scrollbar styling (Chrome, Safari) */
+        #output::-webkit-scrollbar {
+            width: 8px;
+        }
+        #output::-webkit-scrollbar-track {
+            background: #333;
+            border-radius: 4px;
+        }
+        #output::-webkit-scrollbar-thumb {
+            background-color: #00ff00;
+            border-radius: 4px;
+            border: 2px solid #333;
+        }
+
+        /* Input line styling */
+        #input-line {
+            display: flex;
+            align-items: baseline;
+            padding-top: 10px;
+            position: sticky; /* Keeps input at the bottom */
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.9); /* Ensures input is visible over scrolled content */
+            z-index: 10; /* Ensure it stays on top */
+        }
+
+        #prompt {
+            margin-right: 5px;
+            color: #00ffff; /* Cyan color for prompt, stands out */
+            flex-shrink: 0; /* Prevent prompt from shrinking */
+        }
+
+        #command-input {
+            background: transparent;
+            border: none;
+            color: inherit; /* Inherits text color from parent */
+            font-family: inherit; /* Inherits font from parent */
+            font-size: inherit; /* Inherits font size from parent */
+            outline: none; /* Remove focus outline */
+            flex-grow: 1; /* Allows input to take remaining width */
+            caret-color: #00ff00; /* Blinking cursor color */
+            padding: 0; /* Remove default padding */
+        }
+
+        /* Specific style for commands within the help output */
+        .help-command {
+            color: #87CEFA; /* Light Sky Blue for commands in help list */
+        }
+
+        /* Optional: Simulate CRT scanlines effect */
+        #terminal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: loading 1s infinite steps(3, end);
+        }
+
+        @keyframes loading {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal">
+        <div id="output"></div>
+        <div id="input-line">
+            <span id="prompt">user@portfolio:~$</span><input type="text" id="command-input" autofocus autocomplete="off">
+        </div>
+    </div>
+
+    <script>
+        const outputDiv = document.getElementById('output');
+        const commandInput = document.getElementById('command-input');
+        const promptSpan = document.getElementById('prompt');
+
+        // Define your portfolio content here
+        const portfolioContent = {
+        'help': {
+            output: `Available commands:
+  - <span class="help-command">help</span>           : Displays this help message.
+  - <span class="help-command">whoami</span>         : Tells you who I am.
+  - <span class="help-command">about</span>          : Learn more about my skills and experience.
+  - <span class="help-command">projects</span>       : See a list of my projects.
+  - <span class="help-command">contact</span>        : Get my contact information.
+  - <span class="help-command">clear</span>          : Clears the terminal screen.
+  - <span class="help-command">ask-gemini</span> ✨   : Ask an AI assistant anything! (Usage: ask-gemini &lt;your question&gt;)`
+        },
+        'whoami': {
+            output: 'You are currently logged in as a curious visitor to Sreenivasa Bhakthan.V\'s portfolio.'
+        },
+        'about': {
+            output: `
+Hi, I am Sreenivasa Bhakthan.V 👨‍💻
+I’m a 2nd-year CSE undergraduate at Adi Shankara Institute of Engineering and Technology.
+My current focus areas include:
+  - Web Development (HTML, CSS, JavaScript, React)
+  - UI/UX Design using Figma & Canva
+  - Basic Machine Learning and Generative AI
+I enjoy building clean, interactive web apps and also love organizing student-centric tech and community events.
+My goal is to grow as a responsible developer and contribute meaningfully to society and open-source communities.
+            `
+        },
+        'projects': {
+            output: `
+Here are some of my key projects:
+  - Amazon Clone Website: A replica of Amazon's homepage with responsive design. (Try: 'cat project-amazon')
+  - Personal Portfolio: My own portfolio built with HTML, CSS, and JS. (Try: 'cat project-portfolio')
+  - Attendance System: A simple class attendance tracker system. (Try: 'cat project-attendance')
+  - NSS Library Digitalization: Record-breaking digitalization effort during NSS Camp. (Try: 'cat project-nss-library')
+  - Treasure Hunt Event: Coordinated an engaging 4-phase offline hunt. (Try: 'cat project-hunt')
+
+More to come as I keep learning 🚀
+            `
+        },
+        'project-amazon': {
+            output: `
+Amazon Clone Website:
+  Description: A static clone of Amazon's homepage to practice frontend development.
+  Technologies: HTML, CSS
+  Link: https://github.com/sreenivasabhakthan/amazon-clone
+            `
+        },
+        'project-portfolio': {
+            output: `
+Personal Portfolio:
+  Description: My first ever responsive portfolio showcasing skills and mini projects.
+  Technologies: HTML, CSS, JS
+  Link: https://github.com/sreenivasabhakthan/my-portfolio
+            `
+        },
+        'project-attendance': {
+            output: `
+Attendance System:
+  Description: A simple system to track class attendance using Python.
+  Technologies: Python, Tkinter
+  Link: [Coming Soon]
+            `
+        },
+        'project-nss-library': {
+            output: `
+NSS Library Digitalization:
+  Description: Volunteered in NSS to digitalize an entire library in just 2.5 hours — fastest in Kerala.
+  Tools: Manual Entry, Spreadsheet Tools
+  Note: Record set during 7-day NSS camp in 2024.
+            `
+        },
+        'project-hunt': {
+            output: `
+Treasure Hunt Event (KHM 2024):
+  Description: Organized and coordinated a 4-phase offline hunt with 12 teams and 100+ participants.
+  Roles: Design, Clue Logic, Execution Team
+  Tools: Canva, Google Sheets
+            `
+        },
+        'contact': {
+            output: `
+You can reach me at:
+  📧 Email: bhakthanofficial@gmail.com
+  🔗 LinkedIn: https://www.linkedin.com/in/sreenivasabhakthan
+  🐙 GitHub: https://github.com/sreenivasabhakthan
+  🧠 Projects & Certs: Check my GitHub and LinkedIn for bootcamps, hackathons, and certifications!
+            `
+        },
+        'resume': {
+            output: `
+To get a copy of my resume, please email me at bhakthanofficial@gmail.com or message me via LinkedIn.
+            `
+        },
+        };
+
+        // Function to simulate typing effect for plain text
+        function typeEffect(text, callback) {
+            const lineDiv = document.createElement('div');
+            outputDiv.appendChild(lineDiv);
+            let i = 0;
+            const speed = 25; // Typing speed in milliseconds
+
+            function type() {
+                if (i < text.length) {
+                    lineDiv.textContent += text.charAt(i);
+                    i++;
+                    outputDiv.scrollTop = outputDiv.scrollHeight; // Keep scrolling to bottom
+                    setTimeout(type, speed);
+                } else {
+                    if (callback) callback();
+                    outputDiv.scrollTop = outputDiv.scrollHeight;
+                }
+            }
+            type();
+        }
+
+        // Function to echo the user's command with specific styling
+        function appendCommandEcho(command) {
+            const line = document.createElement('div');
+            const promptElement = document.createElement('span');
+            promptElement.textContent = promptSpan.textContent; // "user@portfolio:~$"
+            promptElement.style.color = promptSpan.style.color; // Keep cyan for prompt
+
+            const commandElement = document.createElement('span');
+            commandElement.textContent = command; // The actual command typed by the user
+            commandElement.style.color = '#FFFF00'; // Yellow for the command itself
+
+            line.appendChild(promptElement);
+            line.appendChild(commandElement);
+            outputDiv.appendChild(line);
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+
+        // --- Gemini API Integration ---
+        async function handleGeminiChat(query) {
+            if (!query) {
+                typeEffect("Please provide a question for Gemini. Usage: ask-gemini <your question>");
+                return;
+            }
+
+            const loadingMessageDiv = document.createElement('div');
+            loadingMessageDiv.textContent = 'Gemini is thinking';
+            loadingMessageDiv.classList.add('loading-dots');
+            outputDiv.appendChild(loadingMessageDiv);
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: query }] });
+            const payload = { contents: chatHistory };
+            const apiKey = "AIzaSyCAgrBjMYn5Wr5Ilc-77YnwQKlbET-I0xY"; // Canvas will automatically provide this in runtime
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            let retries = 0;
+            const maxRetries = 5;
+            const initialDelay = 1000; // 1 second
+
+            while (retries < maxRetries) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429 && retries < maxRetries - 1) { // Too Many Requests
+                            const delay = initialDelay * Math.pow(2, retries);
+                            await new Promise(res => setTimeout(res, delay));
+                            retries++;
+                            continue; // Retry the request
+                        } else {
+                            throw new Error(`API error: ${response.status} ${response.statusText}`);
+                        }
+                    }
+
+                    const result = await response.json();
+                    outputDiv.removeChild(loadingMessageDiv); // Remove loading dots
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        typeEffect(`Gemini: ${text}`);
+                    } else {
+                        typeEffect("Gemini could not provide a response. Please try again.");
+                    }
+                    return; // Exit on success
+                } catch (error) {
+                    outputDiv.removeChild(loadingMessageDiv); // Remove loading dots
+                    typeEffect(`Error communicating with Gemini: ${error.message}`);
+                    return; // Exit on error
+                }
+            }
+        }
+        // --- End Gemini API Integration ---
+
+
+        // Handle command input
+        commandInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const fullCommand = commandInput.value.trim();
+                const commandParts = fullCommand.toLowerCase().split(' ');
+                const command = commandParts[0];
+                const query = commandParts.slice(1).join(' '); // For commands like ask-gemini
+
+                appendCommandEcho(fullCommand); // Display the command user typed with new styling
+
+                if (command === 'clear') {
+                    outputDiv.innerHTML = ''; // Clear all output
+                } else if (command === 'ask-gemini') {
+                    handleGeminiChat(query);
+                } else if (command === 'help') {
+                    // For 'help' command, set innerHTML directly to render styled spans
+                    const lineDiv = document.createElement('div');
+                    lineDiv.innerHTML = portfolioContent['help'].output;
+                    outputDiv.appendChild(lineDiv);
+                    outputDiv.scrollTop = outputDiv.scrollHeight;
+                }
+                else if (portfolioContent[command]) {
+                    typeEffect(portfolioContent[command].output); // Existing typeEffect for other commands (plain text)
+                } else {
+                    typeEffect(`Command not found: '${fullCommand}'. Type 'help' for available commands.`);
+                }
+                commandInput.value = ''; // Clear input field
+            }
+        });
+
+        // Initial welcome message on load
+        window.onload = () => {
+            typeEffect("Initializing portfolio...\nWelcome to my terminal portfolio! Type 'help' to get started.");
+            commandInput.focus(); // Focus on the input field
+        };
+    </script>
+</body>
+</html>
